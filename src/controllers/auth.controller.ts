@@ -14,16 +14,21 @@ if (!JWT_SECRET) {
 }
 
 /* -------------------------------------------------- */
-/* EMAIL + PASSWORD LOGIN (ADMIN & STUDENT) */
+/* IDENTIFIER (studentNo OR email) + PASSWORD LOGIN */
+/* (ADMIN & STUDENT) */
 /* -------------------------------------------------- */
 export const login = (req: Request, res: Response) => {
-  const { email, password } = req.body;
+  const { identifier, password } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ message: "email and password are required" });
+  if (!identifier || !password) {
+    return res
+      .status(400)
+      .json({ message: "identifier (studentNo or email) and password are required" });
   }
 
-  const user = users.find((u) => u.email === email);
+  const user = users.find(
+    (u) => u.studentNo === identifier || u.email === identifier
+  );
   if (!user || !user.passwordHash) {
     return res.status(401).json({ message: "Invalid credentials" });
   }
