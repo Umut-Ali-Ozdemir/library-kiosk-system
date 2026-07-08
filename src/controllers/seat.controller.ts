@@ -4,9 +4,21 @@ import { sessions } from "../data/sessions";
 import { SeatStatus } from "../models/seat.model";
 
 /* -------------------------------------------------- */
-/* GET ALL SEATS */
+/* GET ALL SEATS (optionally filtered by floorId) */
 /* -------------------------------------------------- */
 export const getAllSeats = (req: Request, res: Response) => {
+  const { floorId } = req.query;
+
+  if (floorId !== undefined) {
+    const floorIdNum = Number(floorId);
+    if (Number.isNaN(floorIdNum)) {
+      return res.status(400).json({ message: "floorId must be a number" });
+    }
+    return res
+      .status(200)
+      .json(seats.filter((s) => s.floorId === floorIdNum));
+  }
+
   return res.status(200).json(seats);
 };
 

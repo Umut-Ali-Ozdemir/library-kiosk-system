@@ -1,27 +1,44 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-type Floor = {
-  id: number;
-  name: string;
-  occupancy: number;
-};
-
-const floors: Floor[] = [
-  { id: 1, name: "1. Kat", occupancy: 65 },
-  { id: 2, name: "2. Kat", occupancy: 100 },
-  { id: 3, name: "3. Kat", occupancy: 40 },
-];
+import { getFloors } from "../api/floors";
+import { ApiError } from "../api/client";
+import type { FloorSummary } from "../types";
 
 const FloorSelect = () => {
   const navigate = useNavigate();
   const [mounted, setMounted] = useState(false);
+  const [floors, setFloors] = useState<FloorSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     setMounted(true);
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = "auto";
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    getFloors()
+      .then((data) => {
+        if (!cancelled) setFloors(data);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(
+            err instanceof ApiError ? err.message : "Katlar yüklenemedi"
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
     };
   }, []);
 
@@ -78,118 +95,130 @@ const FloorSelect = () => {
         }}
       />
 
-      {/* FLOOR CARDS */}
-      <div
-        style={{
-          display: "flex",
-          gap: "36px",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        {floors.map((floor, index) => {
-          const isFull = floor.occupancy >= 100;
+      {loading && (
+        <p style={{ color: "#94a3b8", fontSize: "14px" }}>
+          Katlar yükleniyor...
+        </p>
+      )}
 
-          return (
-            <div
-              key={floor.id}
-              onClick={() => {
-                if (!isFull) navigate("/seats");
-              }}
-              style={{
-                width: "300px",
-                height: "230px",
-                padding: "28px",
-                borderRadius: "22px",
-                background: isFull
-                  ? "rgba(30,41,59,0.45)"
-                  : "rgba(15,23,42,0.9)",
-                border: "1px solid rgba(148,163,184,0.15)",
-                cursor: isFull ? "not-allowed" : "pointer",
-                opacity: mounted ? (isFull ? 0.4 : 1) : 0,
-                transform: mounted
-                  ? "translateY(0)"
-                  : "translateY(24px)",
-                transition: `all 0.6s ease ${index * 0.15}s`,
-                boxShadow: isFull
-                  ? "none"
-                  : "0 30px 70px rgba(0,0,0,0.55)",
-                display: "flex",
-                flexDirection: "column",
-              }}
-              onMouseEnter={(e) => {
-                if (!isFull) {
-                  e.currentTarget.style.transform =
-                    "translateY(-8px) scale(1.03)";
-                  e.currentTarget.style.boxShadow =
-                    "0 45px 90px rgba(56,189,248,0.3)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform =
-                  "translateY(0) scale(1)";
-                e.currentTarget.style.boxShadow =
-                  "0 30px 70px rgba(0,0,0,0.55)";
-              }}
-            >
-              {/* TOP */}
-              <h2
+      {!loading && error && (
+        <p style={{ color: "#f87171", fontSize: "14px" }}>{error}</p>
+      )}
+
+      {/* FLOOR CARDS */}
+      {!loading && !error && (
+        <div
+          style={{
+            display: "flex",
+            gap: "36px",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          {floors.map((floor, index) => {
+            const isFull = floor.occupancy >= 100;
+
+            return (
+              <div
+                key={floor.id}
+                onClick={() => {
+                  if (!isFull) navigate(`/seats/${floor.id}`);
+                }}
                 style={{
-                  fontSize: "24px",
-                  marginBottom: "24px",
+                  width: "300px",
+                  height: "230px",
+                  padding: "28px",
+                  borderRadius: "22px",
+                  background: isFull
+                    ? "rgba(30,41,59,0.45)"
+                    : "rgba(15,23,42,0.9)",
+                  border: "1px solid rgba(148,163,184,0.15)",
+                  cursor: isFull ? "not-allowed" : "pointer",
+                  opacity: mounted ? (isFull ? 0.4 : 1) : 0,
+                  transform: mounted
+                    ? "translateY(0)"
+                    : "translateY(24px)",
+                  transition: `all 0.6s ease ${index * 0.15}s`,
+                  boxShadow: isFull
+                    ? "none"
+                    : "0 30px 70px rgba(0,0,0,0.55)",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isFull) {
+                    e.currentTarget.style.transform =
+                      "translateY(-8px) scale(1.03)";
+                    e.currentTarget.style.boxShadow =
+                      "0 45px 90px rgba(56,189,248,0.3)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform =
+                    "translateY(0) scale(1)";
+                  e.currentTarget.style.boxShadow =
+                    "0 30px 70px rgba(0,0,0,0.55)";
                 }}
               >
-                {floor.name}
-              </h2>
-
-              {/* CENTER CONTENT */}
-              <div style={{ flexGrow: 1 }}>
-                <div
+                {/* TOP */}
+                <h2
                   style={{
-                    fontSize: "40px",
-                    fontWeight: 700,
-                    color: isFull ? "#94a3b8" : "#22c55e",
-                    marginBottom: "6px",
+                    fontSize: "24px",
+                    marginBottom: "24px",
                   }}
                 >
-                  %{floor.occupancy}
-                </div>
+                  {floor.name}
+                </h2>
 
-                <div
-                  style={{
-                    fontSize: "13px",
-                    color: "#94a3b8",
-                    marginBottom: "16px",
-                  }}
-                >
-                  Doluluk Oranı
-                </div>
-
-                {/* PROGRESS */}
-                <div
-                  style={{
-                    height: "8px",
-                    borderRadius: "999px",
-                    background: "rgba(148,163,184,0.22)",
-                    overflow: "hidden",
-                  }}
-                >
+                {/* CENTER CONTENT */}
+                <div style={{ flexGrow: 1 }}>
                   <div
                     style={{
-                      width: `${floor.occupancy}%`,
-                      height: "100%",
-                      background: isFull
-                        ? "#64748b"
-                        : "linear-gradient(90deg, #22c55e, #4ade80)",
-                      transition: "width 0.6s ease",
+                      fontSize: "40px",
+                      fontWeight: 700,
+                      color: isFull ? "#94a3b8" : "#22c55e",
+                      marginBottom: "6px",
                     }}
-                  />
+                  >
+                    %{floor.occupancy}
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      color: "#94a3b8",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    Doluluk Oranı ({floor.occupiedSeats}/{floor.totalSeats})
+                  </div>
+
+                  {/* PROGRESS */}
+                  <div
+                    style={{
+                      height: "8px",
+                      borderRadius: "999px",
+                      background: "rgba(148,163,184,0.22)",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${floor.occupancy}%`,
+                        height: "100%",
+                        background: isFull
+                          ? "#64748b"
+                          : "linear-gradient(90deg, #22c55e, #4ade80)",
+                        transition: "width 0.6s ease",
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

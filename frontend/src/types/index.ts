@@ -13,8 +13,10 @@ export type SeatStatus = "EMPTY" | "OCCUPIED" | "BREAK" | "DELAYED";
 export interface Seat {
   id: number;
   floorId: number;
-  row: number;
-  number: number;
+  zone: string;
+  tableId: number;
+  tableOrder: number;
+  seatIndexInTable: number;
   isOccupied: boolean;
   occupiedByUserId: number | null;
   status: SeatStatus;
